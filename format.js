@@ -1,42 +1,48 @@
 const ffmpegPath = require("@ffmpeg-installer/ffmpeg").path;
+const ffprobePath = require("@ffprobe-installer/ffprobe").path;
 const ffmpeg = require("fluent-ffmpeg");
+ffmpeg.setFfprobePath(ffprobePath);
 const fs = require("fs");
 
 ffmpeg.setFfmpegPath(ffmpegPath);
-const videos = getVideosForConversion();
+ffmpeg.setFfprobePath(ffprobePath);
 
+const videos = getVideosForConversion();
 if (videos.length > 0) {
   videos.forEach(async (video, i) => {
-    const newTitle = `${video}-9x16.mp4`;
+    const newTitle = `${video.replace(".mp4", "")}-9x16.mp4`;
 
-    // If I can figure out how to get the vid dims
-    // we can swap this stuff out
-    // Currently Hardcoded for 1920 x 1080 clips
-    const oldWidth = 1920;
-    const newWidth = 1080 * 0.5625;
-    const cropFromX = oldWidth / 2 - newWidth / 2;
+    const { mediaWidth, mediaHeight } = await getVideoDimensions(video);
+    // Currently only supports widescreen clips
+    if (mediaWidth && mediaHeight && mediaWidth >= mediaHeight) {
+      const mediaAspectRatio = mediaHeight / mediaWidth;
+      const newWidth = mediaHeight * mediaAspectRatio;
+      const cropFromX = mediaWidth / 2 - newWidth / 2;
 
-    ffmpeg(video)
-      .videoFilter([
-        {
-          filter: "crop",
-          options: {
-            w: 607,
-            h: 1080,
-            x: cropFromX,
-            y: 0,
+      ffmpeg(video)
+        .videoFilter([
+          {
+            filter: "crop",
+            options: {
+              w: newWidth,
+              h: mediaHeight,
+              x: cropFromX,
+              y: 0,
+            },
           },
-        },
-        {
-          filter: "eq",
-          options: "brightness=0.1:saturation=2",
-        },
-      ])
-      .on("end", () => {
-        console.log("great success!");
-      })
-      .output(newTitle)
-      .run();
+          {
+            filter: "eq",
+            options: "brightness=0.1:saturation=2",
+          },
+        ])
+        .on("end", () => {
+          console.log("great success!");
+        })
+        .output(newTitle)
+        .run();
+    } else {
+      console.log("Video dimensions not detected!");
+    }
   });
 } else {
   console.log("No videos detected!");
@@ -54,4 +60,31 @@ function getVideosForConversion() {
   }
 
   return videos;
+}
+
+async function getVideoDimensions(video) {
+  let mediaWidth = 0,
+    mediaHeight = 0;
+
+  await new Promise((res) => {
+    ffmpeg.ffprobe(video, (err, metadata) => {
+      if (err) {
+        res({ mediaWidth: 0, mediaHeight: 0 });
+      } else {
+        const mediaWidth = metadata.streams[0].width;
+        const mediaHeight = metadata.streams[0].height;
+
+        if (!mediaWidth || !mediaHeight) {
+          res({ mediaWidth: 0, mediaHeight: 0 });
+        } else {
+          res({ mediaWidth, mediaHeight });
+        }
+      }
+    });
+  }).then((metadata) => {
+    mediaWidth = metadata.mediaWidth;
+    mediaHeight = metadata.mediaHeight;
+  });
+
+  return { mediaWidth, mediaHeight };
 }

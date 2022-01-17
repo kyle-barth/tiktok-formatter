@@ -2,16 +2,20 @@
   "name": "tiktok-formatter",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "format.js",
+  "bin": "bin.js",
   "scripts": {
-    "start": "node format.js",
+    "build": "pkg -t win .",
+    "dev": "node format.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.1.0",
+    "@ffprobe-installer/ffprobe": "^1.4.1",
     "fluent-ffmpeg": "^2.1.2",
-    "get-media-dimensions": "^2.0.2"
+    "get-media-dimensions": "^2.0.2",
+    "pkg": "^5.5.2"
   }
 }
