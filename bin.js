@@ -6,7 +6,7 @@ var args = process.argv.slice(2);
 
 args.unshift(__dirname + '/../');
 
-childProcess.exec('npm start', (err, stdout) => {
+childProcess.exec('npm run dev', (err, stdout) => {
     if (err) console.log(err);
     console.log(stdout);
 })
