@@ -27,6 +27,10 @@ if (videos.length > 0) {
             y: 0,
           },
         },
+        {
+          filter: "eq",
+          options: "brightness=0.1:saturation=2",
+        },
       ])
       .on("end", () => {
         console.log("great success!");
